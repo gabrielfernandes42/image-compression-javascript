@@ -105,3 +105,12 @@ const getFileSizeString = (filesize) => {
     ? `${sizeInMB.toFixed(1)}MB`
     : `${sizeInKB.toFixed(1)} KB`;
 };
+
+
+const displayResults () => {
+  const results = document.querySelector('.results');
+  if (results.classList.contains('none')) {
+    results.classList.remove('none');
+    results.classList.add('block');
+  }
+}
