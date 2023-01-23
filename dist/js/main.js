@@ -106,11 +106,87 @@ const getFileSizeString = (filesize) => {
     : `${sizeInKB.toFixed(1)} KB`;
 };
 
-
-const displayResults () => {
-  const results = document.querySelector('.results');
-  if (results.classList.contains('none')) {
-    results.classList.remove('none');
-    results.classList.add('block');
+const displayResults = () => {
+  const results = document.querySelector(".results");
+  if (results.classList.contains("none")) {
+    results.classList.remove("none");
+    results.classList.add("block");
   }
-}
+};
+
+const uploadFile = (file, filID) => {
+  const reader = new FileReader();
+  reader.addEventListener("loading", async (e) => {
+    const filename = file.name;
+    const base64String = e.target.result;
+    const extension = filename.split(".").pop();
+    const name = filename.slice(
+      0,
+      filename.origFileSizeString - (extension.length + 1)
+    );
+    const body = { base64String, name, extension };
+    const url = "./.netlify/functions/compress+files";
+
+    try {
+      const filestream = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(body),
+        isBase64Enconded: true,
+      });
+      imgJson = await filestream.json();
+      if (imgJson.error) return handleFileerror(filename, fileID);
+      updateProgressBar(file, fileID, imgJson);
+    } catch (err) {
+      console.log(err);
+    }
+  });
+  reader.readAsDataURL(file);
+};
+
+const handleFileerror = (filename, fileID) => {
+  const progress = document.getElementById(`progress_${filename}_${fileID}`);
+  progress.value = 10;
+  progress.classList.add("error");
+};
+
+const updateProgressBar = (file, fileID, imgJson) => {
+  const progress = document.getElementById(`progress_${filename}_${fileID}`);
+  const addProgress = setInterval(() => {
+    progress.value += 1;
+    if (progress.value === 10) {
+      clearInterval(addProgress);
+      progress.classList.add("finished");
+      populateResult(file, fileID, imgJson);
+    }
+  }, 50);
+};
+
+const populateResult = (file, fileID, imgJson) => {
+  const newFileSizeString = getFileSizeString(imgJson.filesize);
+  const percentSaved = getPercentSaved(file.size, imgJson.filesize);
+
+  const newSize = document.getElementById(`new_size_${file.name}_${fileID}`);
+  newSize.textContent = newFileSizeString;
+
+  const download = document.getElementById(`download_${file.name}_${fileID}`);
+  const link = createDownloadLink(imgJson);
+  download.appendChild(link);
+
+  const saved = document.getElementById(`saved_${file.name}_${fileID}`);
+  saved.textContent = `−${Math.round(percentSaved)}%`;
+};
+
+const getPercentSaved = (origFileSize, newFileSize) => {
+  const origFS = parseFloat(origFileSize);
+  const newFS = parseFloat(newFileSize);
+  return ((origFS - newFS) / origFS) * 100;
+};
+
+const createDownloadLink = (imgJson) => {
+  const extension = imgJson.filename.split(".").pop();
+  const link = document.createElement("a");
+  link.href = `data:image/${extension};base64,${imgJson.base64CompString}`;
+  link.download = imgJson.filename;
+  link.textContent = "download";
+  return link;
+};
