@@ -3,8 +3,9 @@ const counter = new Counter();
 
 const initApp = () => {
   const droparea = document.querySelector(".droparea");
-  //highlights the border of the drop area when hover the file
+
   const active = () => droparea.classList.add("green-border");
+
   const inactive = () => droparea.classList.remove("green-border");
 
   const prevents = (e) => e.preventDefault();
@@ -36,10 +37,9 @@ const handleDrop = (e) => {
 
 const handleFiles = (fileArray) => {
   fileArray.forEach((file) => {
-    //set a id for each file, in case the user drop a file with the same name
     const fileID = counter.getValue();
     counter.incrementValue();
-    if (file.size / 1024 / 1024 > 4) return alert("File over 4MB");
+    if (file.size > 4 * 1024 * 1024) return alert("File over 4 MB");
     createResult(file, fileID);
     uploadFile(file, fileID);
   });
@@ -53,16 +53,14 @@ const createResult = (file, fileID) => {
   p1.textContent = file.name;
 
   const p2 = document.createElement("p");
-  p2.id = `orig_size_${file.name}_${fileID}`;
-  p2.className = "results__sizes";
+  p2.className = "results__size";
   p2.textContent = origFileSizeString;
 
   const divOne = document.createElement("div");
   divOne.appendChild(p1);
   divOne.appendChild(p2);
 
-  //progress bar
-  const progress = document.createElement("p");
+  const progress = document.createElement("progress");
   progress.id = `progress_${file.name}_${fileID}`;
   progress.className = "results__bar";
   progress.max = 10;
@@ -70,7 +68,7 @@ const createResult = (file, fileID) => {
 
   const p3 = document.createElement("p");
   p3.id = `new_size_${file.name}_${fileID}`;
-  p3.className = "rests__size";
+  p3.className = "results__size";
 
   const p4 = document.createElement("p");
   p4.id = `download_${file.name}_${fileID}`;
@@ -86,8 +84,8 @@ const createResult = (file, fileID) => {
   divDL.appendChild(p5);
 
   const divTwo = document.createElement("div");
-  divTwo.appendChild(p4);
-  divTwo.appendChild(p5);
+  divTwo.appendChild(p3);
+  divTwo.appendChild(divDL);
 
   const li = document.createElement("li");
   li.appendChild(divOne);
@@ -100,9 +98,9 @@ const createResult = (file, fileID) => {
 
 const getFileSizeString = (filesize) => {
   const sizeInKB = parseFloat(filesize) / 1024;
-  const sizeInMB = parseFloat(filesize / 1024) / 1024;
+  const sizeInMB = sizeInKB / 1024;
   return sizeInKB > 1024
-    ? `${sizeInMB.toFixed(1)}MB`
+    ? `${sizeInMB.toFixed(1)} MB`
     : `${sizeInKB.toFixed(1)} KB`;
 };
 
@@ -114,43 +112,40 @@ const displayResults = () => {
   }
 };
 
-const uploadFile = (file, filID) => {
+const uploadFile = (file, fileID) => {
   const reader = new FileReader();
-  reader.addEventListener("loading", async (e) => {
+  reader.addEventListener("loadend", async (e) => {
     const filename = file.name;
     const base64String = e.target.result;
     const extension = filename.split(".").pop();
-    const name = filename.slice(
-      0,
-      filename.origFileSizeString - (extension.length + 1)
-    );
+    const name = filename.slice(0, filename.length - (extension.length + 1));
     const body = { base64String, name, extension };
-    const url = "./.netlify/functions/compress+files";
+    const url = "./.netlify/functions/compress_files";
 
     try {
-      const filestream = await fetch(url, {
+      const fileStream = await fetch(url, {
         method: "POST",
         body: JSON.stringify(body),
-        isBase64Enconded: true,
       });
-      imgJson = await filestream.json();
-      if (imgJson.error) return handleFileerror(filename, fileID);
+      const imgJson = await fileStream.json();
+      if (imgJson.error) return handleFileError(filename, fileID);
       updateProgressBar(file, fileID, imgJson);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   });
+
   reader.readAsDataURL(file);
 };
 
-const handleFileerror = (filename, fileID) => {
+const handleFileError = (filename, fileID) => {
   const progress = document.getElementById(`progress_${filename}_${fileID}`);
   progress.value = 10;
   progress.classList.add("error");
 };
 
 const updateProgressBar = (file, fileID, imgJson) => {
-  const progress = document.getElementById(`progress_${filename}_${fileID}`);
+  const progress = document.getElementById(`progress_${file.name}_${fileID}`);
   const addProgress = setInterval(() => {
     progress.value += 1;
     if (progress.value === 10) {

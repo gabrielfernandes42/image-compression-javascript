@@ -1,0 +1,25 @@
+{
+  "name": "image-compression-javascript",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gabrielfernandes42/image-compression-javascript.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gabrielfernandes42/image-compression-javascript/issues"
+  },
+  "homepage": "https://github.com/gabrielfernandes42/image-compression-javascript#readme",
+  "dependencies": {
+    "imagemin": "^8.0.1",
+    "imagemin-jpeg-recompress": "^7.1.0",
+    "imagemin-pngquant": "^9.0.2"
+  }
+}
